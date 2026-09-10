@@ -64,11 +64,12 @@ export function project({monthly,lump,years,gross,fund,inc=0,afterFees=false,ann
  let value=lump,withoutFees=lump,paid=lump,annualPaid=lump;const points=[{year:0,value,paid}];
  const rate=Math.pow(1+gross/100,1/12)-1;
  for(let i=1;i<=years*12;i++){
- value*=1+rate;withoutFees*=1+rate;
  if(i>1&&(i-1)%12===0)annualPaid=0;
  const contribution=Math.min(monthly*(1+inc/100)**Math.floor((i-1)/12),Math.max(0,contributionLimit-paid),Math.max(0,annualLimit-annualPaid));annualPaid+=contribution;
- value=afterFees?Math.max(0,value)+contribution:Math.max(0,value-(value*(fundCost(fund)+PLATFORM_FEE)/100+adminAnnual(value))/12)+contribution;
- withoutFees+=contribution;paid+=contribution;
+ // After-fee planning uses start-of-month payments, matching the journey planners.
+ if(afterFees){value=(value+contribution)*(1+rate);withoutFees=(withoutFees+contribution)*(1+rate)}
+ else{value*=1+rate;withoutFees*=1+rate;value=Math.max(0,value-(value*(fundCost(fund)+PLATFORM_FEE)/100+adminAnnual(value))/12)+contribution;withoutFees+=contribution}
+ paid+=contribution;
  if(i%12===0)points.push({year:i/12,value,paid});
  }
  return {value,paid,feeImpact:withoutFees-value,points};
